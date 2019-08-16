@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { routes } from '../services/api'
+
 import styled from 'styled-components/native';
 import Ionicon from 'react-native-vector-icons/Ionicons';
 import { View } from 'react-native';
@@ -25,6 +27,9 @@ export default class Login extends React.Component {
   state = {
     esqueceuMode: false,
     KeyboardOffset: 20,
+    inputEmail: '',
+    inputSenha: '',
+    inputEmailEsqueceu: '',
     successMsg: '',
     errMsg: ''
   };
@@ -33,8 +38,41 @@ export default class Login extends React.Component {
       this.setState({ successMsg: 'Usuário criado com sucesso' });
     }
   }
-  handleEntrar = () => {
-    this.props.navigation.navigate('Home');
+  handleEntrar = async () => {
+    let msg = '';
+    if (this.state.inputEmail.length < 5) {
+      msg = 'Campo email vazio ou inválido';
+    } else if (!this.state.inputEmail.match(/\w+\@\w+\..+/gi)) {
+      msg = 'Campo email inválido';
+    } else if (this.state.inputSenha.length < 6) {
+      msg = 'A senha deve ter ao menos 6 caracteres';
+    } else {
+      const data = {
+        email: this.state.inputEmail,
+        password: this.state.inputSenha
+      }
+      const response = await fetch(routes.signin, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      const content = await response.json()
+      if (content.token) {
+        this.setState({ successMsg: content.token })
+        // this.props.navigation.navigate('Home');
+      } else {
+        if (content.error === 'UserNotFound') {
+          msg = "Usuário não encontrado"
+        } else if (content.error === 'WrongPassword') {
+          msg = "Senha incorreta"
+        }
+      }
+    }
+
+    this.setState({ errMsg: msg });
   };
   handleEsqueceu = () => {
     this.setState({ esqueceuMode: !this.state.esqueceuMode });
@@ -64,7 +102,11 @@ export default class Login extends React.Component {
               <Input
                 placeholder="Digite seu e-mail"
                 placeholderTextColor={colors.prim4}
+                autoCapitalize="none"
+                autoCompleteType="email"
+                keyboardType="email-address"
                 onFocus={() => this.handleKeyboardOffset(20)}
+                onChangeText={text => this.setState({ inputEmail: text })}
               />
             </InputLogoView>
           </LabelInputView>
@@ -75,14 +117,17 @@ export default class Login extends React.Component {
                 <Ionicon name="md-unlock" size={24} color={colors.prim} />
               </IconText>
               <Input
+                autoCapitalize="none"
+                secureTextEntry={true}
                 placeholder="Digite sua senha"
                 placeholderTextColor={colors.prim4}
                 onFocus={() => this.handleKeyboardOffset(20)}
+                onChangeText={text => this.setState({ inputSenha: text })}
               />
             </InputLogoView>
           </LabelInputView>
           <ButtonView>
-            <ButtonContainer style={shadowStyle.shadow}>
+            <ButtonContainer style={shadowStyle.shadow} onPress={this.handleEntrar}>
               <ButtonLabel>Entrar</ButtonLabel>
             </ButtonContainer>
           </ButtonView>
@@ -115,6 +160,10 @@ export default class Login extends React.Component {
                     <Input
                       placeholder="Digite seu e-mail"
                       placeholderTextColor={colors.prim4}
+                      autoCapitalize="none"
+                      autoCompleteType="email"
+                      keyboardType="email-address"
+                      onChangeText={text => this.setState({ inputEmailEsqueceu: text })}
                       onFocus={() => this.handleKeyboardOffset(100)}
                     />
                   </InputLogoView>
