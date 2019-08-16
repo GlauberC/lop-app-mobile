@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { postHeader, routes } from '../services/api'
+
 import styled from 'styled-components/native';
 import Ionicon from 'react-native-vector-icons/Ionicons';
 
@@ -46,7 +48,7 @@ export default class Cadastro extends React.Component {
       this.setState({ inputRSenha: text });
     }
   };
-  handleCadastro = () => {
+  handleCadastro = async () => {
     let msg = '';
     if (this.state.inputNome.length < 5) {
       msg = 'Campo nome vazio ou inválido';
@@ -67,12 +69,30 @@ export default class Cadastro extends React.Component {
     } else if (this.state.inputSenha !== this.state.inputRSenha) {
       msg = 'As senhas não estão iguais';
     } else {
-      //
-      // Requisição com o backend para validar o cadastro
-      //
-      this.props.navigation.navigate('Login', {
-        criado: true
-      });
+      const data = {
+        name: this.state.inputNome,
+        enrollment: this.state.inputMatricula,
+        email: this.state.inputEmail,
+        password: this.state.inputSenha
+      }
+      const response = await fetch(routes.signup, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      const content = await response.json()
+      if (content.message) {
+        this.props.navigation.navigate('Login', {
+          criado: true
+        });
+      } else {
+        if (content.error) {
+          msg = "Esse email ou o número de matricula já existem"
+        }
+      }
     }
     this.setState({ errMsg: msg });
   };
